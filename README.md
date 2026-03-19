@@ -6,6 +6,7 @@ A lightweight [Model Context Protocol (MCP)](https://modelcontextprotocol.io) se
 
 - **Web search** — query DuckDuckGo and receive ranked results with titles, URLs, and snippets
 - **Page fetching** — retrieve and parse the readable text content of any webpage
+- **LLM-powered relevance extraction** — `fetch_content` routes raw page text through a local/remote LLM and returns only the passages relevant to the query
 - **Rate limiting** — built-in sliding-window rate limiter protects against throttling
 - **Stateless HTTP transport** — compatible with any MCP client that speaks Streamable HTTP
 - **Health endpoint** — `/actuator/health` for container orchestration probes
@@ -16,7 +17,7 @@ A lightweight [Model Context Protocol (MCP)](https://modelcontextprotocol.io) se
 | Tool | Description | Input | Output |
 |------|-------------|-------|--------|
 | `search` | Search DuckDuckGo and return the top N results | `query: string` | Ranked list of results (title, URL, snippet) |
-| `fetch_content` | Fetch and parse readable text from a webpage | `url: string` | Cleaned page text (truncated at 8 000 chars) |
+| `fetch_content` | Fetch a webpage and return only the content relevant to the query | `url: string`, `query: string` | Passages from the page relevant to the query, extracted by an LLM |
 
 ### `search`
 
@@ -33,7 +34,9 @@ Found 5 search results:
 
 ### `fetch_content`
 
-Fetches a URL with `httpx`, strips navigation, headers, footers, scripts, and style elements, then returns the remaining readable text. Content longer than 8 000 characters is truncated with a `[content truncated]` marker.
+Fetches a URL with `httpx`, strips navigation, headers, footers, scripts, and style elements, then passes the cleaned text together with the original `query` to a local/remote LLM (`ContentExtractor`). The LLM returns **only the passages that are directly relevant to the query**, preserving the original wording without summarising or paraphrasing. If no relevant content is found, the tool returns `"The fetched page does not contain content relevant to the query."`
+
+The LLM endpoint must be OpenAI-compatible and is configured via the `LLM_BASE_URL` and `LLM_MODEL` environment variables (see [Configuration](#configuration)).
 
 ## Requirements
 
@@ -66,6 +69,8 @@ cp .env.example .env
 |----------|---------|-------------|
 | `PORT` | `8080` | Port the HTTP server listens on |
 | `MAX_RESULTS` | `5` | Maximum number of search results returned per query |
+| `LLM_BASE_URL` | *(required)* | Base URL of the OpenAI-compatible LLM endpoint used by `fetch_content` |
+| `LLM_MODEL` | `qwen3.5:0.8b` | Model name passed to the LLM endpoint |
 
 ## Running the Server
 

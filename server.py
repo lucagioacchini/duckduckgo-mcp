@@ -80,12 +80,12 @@ async def search(
 
 @mcp.tool()
 async def fetch_content(
-    url: str = Field(..., description='The webpage URL to fetch content from')
+    url: str = Field(..., description='The webpage URL to fetch content from'),
+    query: str = Field(..., description='The search query used to filter relevant content from the page'),
 ) -> types.TextContent:
-    """Fetch and parse content from a webpage URL.
-    """
+    """Fetch and parse content from a webpage URL, returning only text relevant to the query."""
     try:
-        result = await fetcher.fetch_and_parse(url)
+        result = await fetcher.fetch_and_parse(url, query)
     except Exception as e:
         traceback.print_exc(file=sys.stderr)
         raise
