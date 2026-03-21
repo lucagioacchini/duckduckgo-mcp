@@ -8,7 +8,6 @@ from pydantic import Field
 
 from mcp.server.transport_security import TransportSecuritySettings
 from mcp.server.fastmcp import FastMCP
-from mcp.server.fastmcp import Context
 import mcp.types as types
 
 from src.duckduckgo.searcher import DuckDuckGoSearcher
