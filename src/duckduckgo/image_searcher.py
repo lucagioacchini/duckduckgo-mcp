@@ -15,6 +15,16 @@ class DuckDuckGoImageSearcher:
     HEADERS = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
     }
+    # The i.js endpoint is an XHR-only API and 403s without these extra headers
+    IMAGES_HEADERS = {
+        **HEADERS,
+        "Accept": "application/json, text/javascript, */*; q=0.01",
+        "Referer": "https://duckduckgo.com/",
+        "Sec-Fetch-Dest": "empty",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Site": "same-origin",
+        "X-Requested-With": "XMLHttpRequest",
+    }
 
     def __init__(self):
         self.rate_limiter = RateLimiter()
@@ -26,7 +36,7 @@ class DuckDuckGoImageSearcher:
         )
         response.raise_for_status()
 
-        match = re.search(r"vqd=['\"]([\d-]+)['\"]", response.text)
+        match = re.search(r"vqd=['\"]?([\d-]+)['\"&]", response.text)
         if not match:
             raise ValueError("Could not retrieve DuckDuckGo search token (vqd)")
 
@@ -44,7 +54,7 @@ class DuckDuckGoImageSearcher:
                 response = await client.get(
                     self.IMAGES_URL,
                     params={"q": query, "vqd": vqd, "o": "json", "f": ",,,", "p": "1"},
-                    headers=self.HEADERS,
+                    headers=self.IMAGES_HEADERS,
                     timeout=30.0,
                 )
                 response.raise_for_status()
