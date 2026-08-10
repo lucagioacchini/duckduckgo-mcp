@@ -1,3 +1,4 @@
+import base64
 import traceback
 import sys
 import os
@@ -12,6 +13,7 @@ import mcp.types as types
 
 from src.duckduckgo.searcher import DuckDuckGoSearcher
 from src.duckduckgo.fetcher import WebContentFetcher
+from src.duckduckgo.image_searcher import DuckDuckGoImageSearcher
 
 from starlette.applications import Starlette
 from starlette.routing import Mount
@@ -42,6 +44,7 @@ mcp = FastMCP(
 
 searcher = DuckDuckGoSearcher()
 fetcher = WebContentFetcher()
+image_searcher = DuckDuckGoImageSearcher()
 
 @mcp.custom_route("/actuator/health", methods=["GET"])
 async def health(request):
@@ -92,6 +95,24 @@ async def fetch_content(
     return types.TextContent(
         type="text",
         text=result
+    )
+
+
+@mcp.tool()
+async def get_images(
+    query: str = Field(..., description="The search query used to find an image")
+) -> types.ImageContent:
+    """Search DuckDuckGo Images and return the first matching image as binary content."""
+    try:
+        image_bytes, mime_type = await image_searcher.get_image(query)
+    except Exception as e:
+        traceback.print_exc(file=sys.stderr)
+        raise
+
+    return types.ImageContent(
+        type="image",
+        data=base64.b64encode(image_bytes).decode("utf-8"),
+        mimeType=mime_type,
     )
 
 
